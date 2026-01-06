@@ -35,7 +35,7 @@ export function initApp() {
 
 async function loadCourseData() {
     try {
-        const response = await fetch('./js/tkb/course_db.json'); 
+        const response = await fetch('./js/Tkb/Course_db.json'); 
         if (!response.ok) throw new Error("Không tải được file dữ liệu môn học!");
         return await response.json();
     } catch (error) {
