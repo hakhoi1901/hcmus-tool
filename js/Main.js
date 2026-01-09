@@ -1,6 +1,7 @@
 import { setupBookmarklet, openPortal } from './PortalHandler.js';
 import { renderDashboardUI, renderCourseList, toggleCourse, removeCourse, filterCourses } from './render/Dashboard.js';
 import { onNutBamXepLich } from './Logic.js';
+import { CourseRecommender } from './tkb/Recommender.js';
 
 // Setup
 setupBookmarklet();
@@ -53,48 +54,73 @@ window.addEventListener("message", (event) => {
     }
 }, false);
 
-// --- 2. KHỞI TẠO KHI LOAD TRANG ---
+// Hàm fetch json helper
+async function fetchJson(path) {
+    try {
+        const res = await fetch(path);
+        return res.ok ? await res.json() : [];
+    } catch (e) {
+        console.error(`Lỗi tải ${path}:`, e);
+        return [];
+    }
+}
+
+// --- KHỞI TẠO KHI LOAD TRANG ---
 window.onload = async () => {
-    // A. Load thông tin SV
+    // 1. Load thông tin SV
+    let studentData = {};
     const oldStudentData = localStorage.getItem('student_db_full');
     if (oldStudentData) {
-        try { renderDashboardUI(JSON.parse(oldStudentData)); } catch (e) {}
+        try { 
+            studentData = JSON.parse(oldStudentData);
+            renderDashboardUI(studentData); 
+        } catch (e) {}
     }
 
-    // B. Load dữ liệu Lớp Mở (Logic quan trọng đã sửa)
-    let courseData = [];
+    // 2. Load dữ liệu Lớp Mở (Offline)
+    let openCourses = [];
     const localCourses = localStorage.getItem('courses_db_offline');
-    const ind = document.getElementById('data-source-indicator');
-
     if (localCourses) {
-        try {
-            console.log("🔥 Đang dùng dữ liệu LocalStorage (Portal)");
-            courseData = JSON.parse(localCourses);
-            if(ind) ind.innerText = "Nguồn: Dữ liệu thực tế từ Portal (Offline)";
-        } catch(e) { 
-            console.error("Data offline lỗi, sẽ tải file JSON"); 
-        }
-    } 
+        try { openCourses = JSON.parse(localCourses); } catch(e){}
+    }
     
-    // Nếu không có data offline (hoặc lỗi parse), tải file JSON
-    if (!courseData || courseData.length === 0) {
+    // Fallback: Load file mẫu nếu không có data offline
+    if (!openCourses || openCourses.length === 0) {
+        openCourses = await fetchJson('./js/tkb/Course_db.json');
+        const ind = document.getElementById('data-source-indicator');
+        if(ind) ind.innerText = "Nguồn: File tĩnh (Mẫu)";
+    } else {
+        const ind = document.getElementById('data-source-indicator');
+        if(ind) ind.innerText = "Nguồn: Portal (Offline)";
+    }
+
+    // 3. CHẠY LOGIC GỢI Ý
+    let coursesToRender = openCourses; // Mặc định hiển thị tất cả lớp mở
+
+    // Chỉ chạy nếu có dữ liệu SV
+    if (studentData && studentData.grades && studentData.grades.length > 0) {
         try {
-            console.log("📂 Đang tải Course_db.json...");
-            const res = await fetch('./js/tkb/Course_db.json');
-            if (res.ok) {
-                courseData = await res.json();
-                if(ind) ind.innerText = "Nguồn: File tĩnh (Mẫu)";
+            // Tải dữ liệu JSON từ assets
+            const [prereqs, allCoursesMeta] = await Promise.all([
+                fetch('./assets/data/prerequisites.json').then(r => r.json()),
+                fetch('./assets/data/courses.json').then(r => r.json())
+            ]);
+
+            const recommender = new CourseRecommender(studentData, openCourses, prereqs, allCoursesMeta);
+            const recommendedList = recommender.recommend();
+
+            if (recommendedList.length > 0) {
+                // Nếu có gợi ý, hiển thị danh sách gợi ý
+                coursesToRender = recommendedList;
+                
+                const ind = document.getElementById('data-source-indicator');
+                if(ind) ind.innerHTML += " <br>✨ <b>Đang hiển thị danh sách môn GỢI Ý</b>";
             }
-        } catch (e) { 
-            console.log("Không tải được file mẫu.", e); 
+        } catch (e) {
+            console.error("Lỗi khi chạy Recommender:", e);
         }
     }
 
-    // Render dữ liệu (Dù nguồn nào thì cũng gọi hàm này)
-    if (courseData && courseData.length > 0) {
-        renderCourseList(courseData);
-    } else {
-        const container = document.getElementById('course-list-area');
-        if(container) container.innerHTML = '<div style="padding:10px; text-align:center">Không có dữ liệu môn học nào.</div>';
-    }
+    // Render ra màn hình
+    renderCourseList(coursesToRender);
 };

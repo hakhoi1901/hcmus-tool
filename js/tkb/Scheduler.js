@@ -1,63 +1,82 @@
-// --- 1. IMPORT CÁC MODULE CON ---
-import { CourseDatabase } from './CourseDatabase.js';
-import { GeneticSolver } from './GeneticSolver.js';
+import CourseDatabase from './CourseDatabase.js';
+import GeneticSolver from './GeneticSolver.js';
 
-// --- 2. HÀM XỬ LÝ CHÍNH (MAIN FUNCTION) ---
-// Hàm này sẽ được Web App gọi
-export function runScheduleSolver(courseDBData, userRequest, fixedClasses, sessionPref) {
-    // A. Khởi tạo Database và Load dữ liệu
-    // courseDBData là cục JSON to đùng (danh sách lớp mở)
+export function runScheduleSolver(rawData, userWants, fixedClasses, sessionPref) {
     const db = new CourseDatabase();
     
-    // Nếu courseDBData là string (JSON text) thì parse ra, nếu là object rồi thì thôi
-    const rawData = (typeof courseDBData === 'string') 
-                    ? JSON.parse(courseDBData) 
-                    : courseDBData;
+    // 1. Nạp dữ liệu
+    const data = (typeof rawData === 'string') ? JSON.parse(rawData) : rawData;
+    db.loadData(data); 
 
-    db.loadFromEngineFormat(rawData); 
+    // 2. Lọc môn học theo yêu cầu
+    const selectedCourses = [];
+    userWants.forEach(subjID => {
+        const cleanID = String(subjID).trim(); 
+        const course = db.getCourse(cleanID);
+        
+        if (course) {
+            // Xử lý môn học bị người dùng "Ghim" (Fixed)
+            if (fixedClasses[cleanID]) {
+                const fixedClass = course.classes.find(c => c.id === fixedClasses[cleanID]);
+                if (fixedClass) {
+                    // Tạo bản sao môn học chỉ chứa đúng 1 lớp đã chọn -> Solver buộc phải lấy lớp này
+                    selectedCourses.push({ ...course, classes: [fixedClass] });
+                } else {
+                    selectedCourses.push(course);
+                }
+            } else {
+                selectedCourses.push(course);
+            }
+        } else {
+            console.warn(`⚠️ Scheduler: Không tìm thấy môn [${cleanID}] trong DB.`);
+        }
+    });
 
-    // B. Lọc ra các môn user muốn học
-    // userRequest: mảng các mã môn ['IT001', 'BAA00021'...]
-    const selectedSubjects = db.filterSubjects(userRequest);
-    
-    if (selectedSubjects.length === 0) {
-        console.error("Không tìm thấy môn nào hợp lệ trong DB.");
-        return { error: "No subjects found" };
+    if (selectedCourses.length === 0) {
+        return { error: 'Không tìm thấy môn nào hợp lệ. Hãy thử tải lại dữ liệu (Mở Portal).' };
     }
 
-    // C. Chạy thuật toán Di truyền (Genetic Algorithm)
-    // sessionPref: 0 (Cả hai), 1 (Sáng), 2 (Chiều)
-    console.log(`Starting Genetic Solver for ${selectedSubjects.length} subjects...`);
+    // 3. Khởi tạo Engine (SỬA LỖI: Truyền đủ 3 tham số)
+    // GeneticSolver(subjects, fixedConstraints, sessionPref)
+    const solver = new GeneticSolver(selectedCourses, fixedClasses, sessionPref);
     
-    const solver = new GeneticSolver(selectedSubjects, fixedClasses, sessionPref);
+    // 4. Chạy thuật toán (SỬA LỖI: Truyền số lượng kết quả muốn lấy)
+    const rawResults = solver.solve(5); // Lấy top 5 kết quả tốt nhất
+
+    // 5. [QUAN TRỌNG] CHUYỂN ĐỔI DỮ LIỆU (Mapping)
+    // Chuyển từ Chromosome (Gen) -> UI Model (để Utils.js hiển thị được)
     
-    // Lấy 3 kết quả tốt nhất (Top 3)
-    const rawResults = solver.solve(3); 
-
-    // D. Đóng gói kết quả trả về cho Web App
-    const finalResults = rawResults.map((res, idx) => {
-        return {
-            option: idx + 1,
-            fitness: res.fitness,
-            // Map ngược từ Gene (index lớp) ra thông tin chi tiết
-            schedule: res.genes.map((classIdx, subjIdx) => {
-                // Nếu gene = -1 nghĩa là không đăng ký được môn đó (hiếm gặp)
-                if (classIdx === -1) return null;
-
-                const subj = selectedSubjects[subjIdx];
-                const cls = subj.classes[classIdx];
+    const mappedResults = rawResults.map((ind, index) => {
+        const scheduleList = [];
+        
+        // Duyệt qua từng gen để lấy thông tin lớp học cụ thể
+        ind.genes.forEach((classIdx, courseIdx) => {
+            if (classIdx !== -1) {
+                const course = selectedCourses[courseIdx];
+                const classObj = course.classes[classIdx];
                 
-                return {
-                    subjectID: subj.id,
-                    subjectName: subj.name,
-                    classID: cls.id,
-                    // Bạn có thể thêm Bitmask vào đây nếu muốn vẽ bảng màu mè
-                    mask: cls.scheduleMask.parts 
-                };
-            }).filter(item => item !== null) // Lọc bỏ giá trị null
+                // Lấy mask để vẽ màu: 
+                // Do CourseDatabase đã chuyển mask thành Bitset, ta cần lấy mảng 'parts' ra
+                let visualMask = classObj.mask;
+                if (!visualMask && classObj.scheduleMask) {
+                    visualMask = classObj.scheduleMask.parts;
+                }
+
+                scheduleList.push({
+                    subjectID: course.id,
+                    classID: classObj.id,
+                    mask: visualMask || [0,0,0,0], // Mảng số nguyên dùng để render màu
+                    schedule: classObj.schedule
+                });
+            }
+        });
+
+        return {
+            option: index + 1,
+            fitness: ind.fitness,
+            schedule: scheduleList // <-- Đây là cái Utils.js đang tìm (.forEach)
         };
     });
 
-    console.log("Solver finished. Found options:", finalResults.length);
-    return finalResults;
+    return mappedResults;
 }

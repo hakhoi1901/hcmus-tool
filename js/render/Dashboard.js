@@ -24,59 +24,32 @@ function renderInfo(data) {
 
 function renderProgram(data) {
     let section = document.getElementById('section-program');
-    // Nếu chưa có HTML thì tạo mới (DOM động)
     if (!section) {
         const wrapper = document.getElementById('result-wrapper');
         if (!wrapper) return;
-        
         section = document.createElement('div');
         section.id = 'section-program';
         section.className = 'section-box';
-        section.innerHTML = `
-            <h4 class="section-title">🎓 Tiến độ học tập</h4>
-            <div class="info-row">
-                <span>Tổng môn CTĐT: <b id="lbl-prog-total">0</b></span>
-                <span>Đã qua: <b id="lbl-prog-done" style="color:green">0</b></span>
-            </div>
-            <div class="table-scroll" style="max-height: 300px;">
-                <table id="tbl-program">
-                    <thead>
-                        <tr><th>Mã Môn</th><th>Tên Môn</th><th>TC</th><th>Trạng thái</th></tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        `;
+        section.innerHTML = `<h4 class="section-title">🎓 Tiến độ học tập</h4>
+            <div class="info-row"><span>Tổng môn CTĐT: <b id="lbl-prog-total">0</b></span><span>Đã qua: <b id="lbl-prog-done" style="color:green">0</b></span></div>
+            <div class="table-scroll" style="max-height: 300px;"><table id="tbl-program"><thead><tr><th>Mã Môn</th><th>Tên Môn</th><th>TC</th><th>Trạng thái</th></tr></thead><tbody></tbody></table></div>`;
         wrapper.appendChild(section);
     }
-
     const tbody = section.querySelector('tbody');
     tbody.innerHTML = '';
-
     const program = data.program || [];
     const grades = data.grades || [];
-    
-    // Tạo Set các môn đã qua môn (Điểm >= 5)
     const passedSubjects = new Set();
-    grades.forEach(g => {
-        if (typeof g.score === 'number' && g.score >= 5.0) passedSubjects.add(g.id);
-    });
-
+    grades.forEach(g => { if (typeof g.score === 'number' && g.score >= 5.0) passedSubjects.add(g.id); });
     let doneCount = 0;
     program.forEach(p => {
         const isDone = passedSubjects.has(p.id);
         if (isDone) doneCount++;
         const tr = document.createElement('tr');
         tr.style.background = isDone ? '#f0fdf4' : 'white';
-        tr.innerHTML = `
-            <td style="font-weight:bold; color:${isDone ? '#15803d' : '#666'}">${p.id}</td>
-            <td>${p.name}</td>
-            <td style="text-align:center">${p.credits}</td>
-            <td style="text-align:center">${isDone ? '<span style="color:#15803d; font-weight:bold">✔ Đã xong</span>' : '<span style="color:#ca8a04; font-size:12px">Chưa học</span>'}</td>
-        `;
+        tr.innerHTML = `<td style="font-weight:bold; color:${isDone ? '#15803d' : '#666'}">${p.id}</td><td>${p.name}</td><td style="text-align:center">${p.credits}</td><td style="text-align:center">${isDone ? '<span style="color:#15803d; font-weight:bold">✔ Đã xong</span>' : '<span style="color:#ca8a04; font-size:12px">Chưa học</span>'}</td>`;
         tbody.appendChild(tr);
     });
-
     const lblTotal = document.getElementById('lbl-prog-total');
     const lblDone = document.getElementById('lbl-prog-done');
     if(lblTotal) lblTotal.innerText = program.length;
@@ -204,8 +177,7 @@ let _courseData = []; // Biến nội bộ lưu danh sách để tìm kiếm
 //     container.innerHTML = html;
 // }
 
-export 
-function renderCourseList(courses) {
+export function renderCourseList(courses) {
     const container = document.getElementById('course-list-area');
     container.innerHTML = '';
 
@@ -243,34 +215,48 @@ export function renderScheduleResults(results) {
     container.innerHTML = ''; 
     container.style.display = 'block';
 
-    if (!results || results.length === 0) {
-        container.innerHTML = '<div style="text-align:center; padding:20px; color:red">Không tìm thấy lịch học phù hợp!</div>';
+    // KIỂM TRA LỖI TỪ SCHEDULER TRẢ VỀ
+    if (results && results.error) {
+        container.innerHTML = `<div style="text-align:center; padding:20px; color:red; font-weight:bold;">❌ ${results.error}</div>`;
         return;
     }
+
+    // Kiểm tra nếu không phải mảng hoặc mảng rỗng
+    if (!Array.isArray(results) || results.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:20px; color:red">Không tìm thấy lịch học phù hợp (hoặc xung đột giờ)!</div>';
+        return;
+    }
+    // ---------------------------
 
     const days = ["Hai", "Ba", "Tư", "Năm", "Sáu", "Bảy", "CN"];
 
     results.forEach((opt, index) => {
+        // ... (Giữ nguyên logic vẽ bảng bên trong vòng lặp)
+        // Copy lại phần code vẽ bảng cũ vào đây
         let grid = Array(10).fill(null).map(() => Array(7).fill(null));
 
         opt.schedule.forEach(subject => {
-            const timeSlots = decodeScheduleMask(subject.mask);
-            timeSlots.forEach(slot => {
-                if (slot.period < 10) {
-                    const cellContent = `
-                        <div style="font-size:11px; font-weight:bold; color:#005a8d">${subject.subjectID}</div>
-                        <div style="font-size:10px; opacity:0.8">${subject.classID}</div>
-                    `;
-                    if(grid[slot.period][slot.day]) grid[slot.period][slot.day] += "<hr style='margin:2px 0'>" + cellContent;
-                    else grid[slot.period][slot.day] = cellContent;
-                }
-            });
+            if(subject.mask) {
+                // Import hàm decodeScheduleMask hoặc định nghĩa nó ở trên
+                const timeSlots = decodeScheduleMask(subject.mask); 
+                timeSlots.forEach(slot => {
+                    if (slot.period < 10) {
+                        const cellContent = `
+                            <div style="font-size:11px; font-weight:bold; color:#005a8d">${subject.subjectID}</div>
+                            <div style="font-size:10px; opacity:0.8">${subject.classID}</div>
+                        `;
+                        if(grid[slot.period][slot.day]) grid[slot.period][slot.day] += "<hr style='margin:2px 0'>" + cellContent;
+                        else grid[slot.period][slot.day] = cellContent;
+                    }
+                });
+            }
         });
 
         let tableHTML = `
             <div class="schedule-option">
                 <div class="schedule-header">
-                    <span>PA ${opt.option} (Fitness: ${opt.fitness.toFixed(0)})</span>
+                    <span>PHƯƠNG ÁN ${opt.option}</span>
+                    <span>Fitness: ${opt.fitness ? opt.fitness.toFixed(0) : 0}</span>
                 </div>
                 <table class="tkb-grid">
                     <thead>

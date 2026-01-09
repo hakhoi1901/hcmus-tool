@@ -2,7 +2,7 @@ import { CONFIG } from './Constants.js';
 import { Chromosome } from './Chromosome.js';
 import { FitnessEvaluator } from './FitnesseValuator.js';
 
-export class GeneticSolver {
+export default class GeneticSolver {
     constructor(subjects, fixedConstraints, sessionPref) {
         this.targetSubjects = subjects;
         this.sessionPref = sessionPref;

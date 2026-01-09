@@ -1,0 +1,62 @@
+{
+    "GENERAL_EDUCATION": {
+        "total_credits_required": 56,
+        "breakdown": {
+            "POLITICAL_PHILOSOPHY": {
+                "title": "Lý luận chính trị",
+                "credits_required": 14,
+                "mandatory": true,
+                "courses": ["BAA00101", "BAA00102", "BAA00103", "BAA00104", "BAA00003"]
+            },
+            "SOCIAL_ECONOMICS": {
+                "title": "Khoa học xã hội & Nhân văn",
+                "credits_required": 2, 
+                "mandatory": false, 
+                "description": "Chọn 1 trong 3: Kinh tế, Tâm lý, PPL Sáng tạo",
+                "courses": ["BAA00005", "BAA00006", "BAA00007"]
+            },
+            "MATHEMATICS_SCIENCE": {
+                "title": "Toán & Khoa học tự nhiên",
+                "credits_required": 36,
+                "mandatory": true,
+                "sub_groups": [
+                    {
+                        "id": "MATH_CORE",
+                        "title": "Toán bắt buộc",
+                        "credits_required": 24,
+                        "courses": ["MTH00021", "MTH00022", "MTH00035", "MTH00044", "MTH00045", "MTH00050"]
+                    },
+                    {
+                        "id": "MATH_ELECTIVE",
+                        "title": "Toán tự chọn (1/3)",
+                        "credits_required": 4,
+                        "courses": ["MTH00051", "MTH00052", "MTH00053"]
+                    },
+                    {
+                        "id": "SCIENCE_CORE",
+                        "title": "Khoa học (Lý/Hóa/Sinh)",
+                        "credits_required": 6,
+                        "courses": ["PHY00001", "PHY00002", "CHE00001", "CHE00002", "BIO00001", "BIO00002"]
+                    },
+                    {
+                        "id": "ENVIRONMENT",
+                        "title": "Môi trường",
+                        "credits_required": 2,
+                        "courses": ["ENV00001", "ENV00003", "GEO00002"]
+                    }
+                ]
+            },
+            "COMPUTER_SCIENCE": {
+                "title": "Tin học",
+                "credits_required": 4,
+                "mandatory": true,
+                "courses": ["CSC00004"]
+            }
+        }
+    },
+    "FOUNDATION": {
+        "total_credits_required": 38,
+        "mandatory": true,
+        "courses": ["CSC10012", "CSC10003", "CSC10004", "CSC10006", "CSC10007", "CSC10008", "CSC10009", "CSC13002", "CSC14003"]
+    }
+}

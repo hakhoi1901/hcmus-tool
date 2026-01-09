@@ -1,10 +1,28 @@
-import { bookmarkletCode } from './Config.js'; 
+import { getBookmarkletHref, PORTAL_URL } from './Config.js'; 
 
-export function setupBookmarklet() {
+export async function setupBookmarklet() {
     const btn = document.getElementById('bookmark-btn');
-    // Nếu có mã bookmarkletCode, gán vào href
-    if (btn && bookmarkletCode) {
-        btn.setAttribute('href', bookmarkletCode);
+    
+    if (btn) {
+        // Hiển thị trạng thái đang tải (Optional)
+        btn.innerText = "⏳ Đang tạo Bookmarklet...";
+        btn.style.opacity = "0.5";
+
+        // Gọi hàm lấy code từ Config.js
+        const href = await getBookmarkletHref();
+        
+        // Gán vào nút
+        btn.setAttribute('href', href);
+        
+        // Khôi phục trạng thái
+        btn.innerText = "Kéo tôi lên thanh Bookmark";
+        btn.style.opacity = "1";
+        
+        // Chặn click chuột trái (vì bookmarklet phải kéo thả)
+        btn.onclick = (e) => {
+            e.preventDefault();
+            alert("Đừng bấm! Hãy KÉO nút này thả lên thanh dấu trang (Bookmark Bar) của trình duyệt.");
+        };
     }
 }
 
@@ -12,9 +30,9 @@ export function openPortal() {
     const statusEl = document.getElementById('status-area');
     if (statusEl) {
         statusEl.style.display = 'block';
-        statusEl.className = '';
+        statusEl.className = 'status-msg'; // Reset class
         statusEl.innerText = "Đang kết nối... Vui lòng thao tác trên Portal.";
     }
-    // Mở trang portal (ví dụ trang login hoặc trang điểm)
-    window.open("https://new-portal4.hcmus.edu.vn/SinhVien.aspx?pid=211", 'PortalWindow');
+    // Mở trang portal login
+    window.open(PORTAL_URL, 'PortalWindow');
 }

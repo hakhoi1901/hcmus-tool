@@ -11,6 +11,15 @@ export async function onNutBamXepLich() {
         btn.disabled = true;
     }
 
+    if (!GLOBAL_COURSE_DB || GLOBAL_COURSE_DB.length === 0) {
+        // Cố gắng load lại lần nữa nếu rỗng
+        GLOBAL_COURSE_DB = await loadCourseData();
+        if (GLOBAL_COURSE_DB.length === 0) {
+            alert("⚠️ Chưa có dữ liệu môn học! Vui lòng tải lại trang hoặc đồng bộ từ Portal.");
+            return;
+        }
+    }
+
     try {
         // 1. Lấy dữ liệu user chọn từ UI
         const userWants = [];

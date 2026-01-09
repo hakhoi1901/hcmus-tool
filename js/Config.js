@@ -1,15 +1,60 @@
 // ================= CONFIG.JS =================
-// CÒNIG cài đặt sẵn các giá trị
-// ==================================================
+// Cấu hình hệ thống và tạo Bookmarklet
+// =============================================
 
-// Lưu địa chỉ các tab khác nhau của portal
+// 1. CÁC URL QUAN TRỌNG
 export const PORTAL_TAB_URL = {
-        URL_DIEM: "https://new-portal4.hcmus.edu.vn/SinhVien.aspx?pid=211", // Trang xem điểm
-        URL_LICHTHI: "/SinhVien.aspx?pid=212",                               // Trang lịch thi
-        URL_HOCPHI: "/SinhVien.aspx?pid=331"                                  // Trang học phí
-    };
+    URL_DIEM: "/SinhVien.aspx?pid=211",
+    URL_LICHTHI: "/SinhVien.aspx?pid=212",
+    URL_HOCPHI: "/SinhVien.aspx?pid=331",
+    URL_LOPMO: "/SinhVien.aspx?pid=327"
+};
 
-// Lưu địa chỉ portal để mở
 export const PORTAL_URL = 'https://new-portal1.hcmus.edu.vn/Login.aspx?ReturnUrl=%2fSinhVien.aspx%3fpid%3d211&pid=211';
 
-export const bookmarkletCode = `javascript:(async function(){const CONFIG={URL_DIEM:"https://new-portal4.hcmus.edu.vn/SinhVien.aspx?pid=211",URL_LICHTHI:"/SinhVien.aspx?pid=212",URL_HOCPHI:"/SinhVien.aspx?pid=331",URL_CTDT:"/SinhVien.aspx?pid=327"};function scrapeGrades(){try{let mssv="Unknown";const userEl=document.getElementById('user_tools');if(userEl){const match=userEl.innerText.match(/Xin chào\\s+([^|]+)/i);if(match)mssv=match[1].trim();}const grades=[];document.querySelectorAll('#tbDiemThiGK tbody tr').forEach(row=>{if(row.cells.length<6)return;const semester=row.cells[0]?.innerText.trim()||'';const rawSubj=row.cells[1]?.innerText.trim()||'';let id="",name=rawSubj;if(rawSubj.includes(" - ")){const parts=rawSubj.split(" - ");id=parts[0].trim();name=parts.slice(1).join(" - ").trim();}const credits=row.cells[2]?.innerText.trim();const classID=row.cells[3]?.innerText.trim();const rawScore=row.cells[5]?.innerText.trim();let score=rawScore;if(!isNaN(parseFloat(rawScore)))score=parseFloat(rawScore);if(id)grades.push({semester,id,name,credits,class:classID,score});});return{mssv,grades};}catch(e){return null;}}async function fetchProgram(){try{const res=await fetch(CONFIG.URL_CTDT);const text=await res.text();const doc=new DOMParser().parseFromString(text,'text/html');const program=[];const rows=doc.querySelectorAll('table tbody tr');rows.forEach(row=>{const cells=row.querySelectorAll('td');if(cells.length>=4){const id=cells[1]?.innerText.trim();const name=cells[2]?.innerText.trim();const credits=cells[3]?.innerText.trim();if(id&&/^[A-Z]{3,}\\d+/.test(id)){program.push({id:id,name:name,credits:credits});}}});return program;}catch(e){console.error("Lỗi cào CTĐT:",e);return[];}}async function fetchBG(url,type){try{const res=await fetch(url);const text=await res.text();const doc=new DOMParser().parseFromString(text,'text/html');if(type==='EXAM'){const ex=[];doc.querySelectorAll('#tbLichThi tbody tr').forEach(row=>{if(row.cells.length>3)ex.push({sub:row.cells[1]?.innerText.trim(),date:row.cells[2]?.innerText.trim(),time:row.cells[3]?.innerText.trim(),room:row.cells[4]?.innerText.trim()})});return ex;}if(type==='TUITION'){const details=[];doc.querySelectorAll('.dkhp-table tbody tr').forEach(row=>{const c=row.querySelectorAll('td');if(c.length>9){let rawName=c[2].innerText.trim();let codeMatch=rawName.match(/\\\\[(.*?)\\\\]/);let code=codeMatch?codeMatch[1]:"";let name=rawName.replace(/\\\\[.*?\\\\]/g,'').trim();if(rawName)details.push({code,name,credits:c[3].innerText.trim(),fee:c[9].innerText.trim()})}});const totalEl=doc.querySelector('th[title="Tổng số phải đóng"]');return{total:totalEl?totalEl.innerText.trim():"0",details};}return[];}catch(e){return type==='TUITION'?{total:"0",details:[]}:[]}}try{if(window.location.href.indexOf("pid=211")===-1){window.location.href=CONFIG.URL_DIEM;return}const cb=document.getElementById("ctl00_ContentPlaceHolder1_ctl00_cboNamHoc_gvDKHPLichThi_ob_CbocboNamHoc_gvDKHPLichThiTB");const btn=document.getElementById("ctl00_ContentPlaceHolder1_ctl00_btnXemDiemThi");if(!cb||!btn){alert("⚠️ Lỗi giao diện Portal.");return}const isAll=(cb.value.indexOf("Tất cả")!==-1||cb.value.indexOf("All")!==-1);if(!isAll){try{if(typeof cboNamHoc_gvDKHPLichThi!=='undefined')cboNamHoc_gvDKHPLichThi.value('0');}catch(e){}btn.click();alert("🔄 Đang tải lại trang...\\n\\n👉 BẤM LẠI LẦN NỮA KHI WEB TẢI XONG!");return;}const gData=scrapeGrades();if(!gData||gData.grades.length===0){alert("⚠️ Bảng điểm trống.");return}const noti=document.createElement('div');Object.assign(noti.style,{position:'fixed',bottom:'20px',right:'20px',background:'#005a8d',color:'white',padding:'15px 20px',zIndex:'99999',borderRadius:'8px',boxShadow:'0 4px 12px rgba(0,0,0,0.3)',fontFamily:'Segoe UI, sans-serif',fontSize:'14px',display:'flex',alignItems:'center',gap:'10px'});noti.innerHTML='<div style="width:20px;height:20px;border:3px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite"></div><span>Đang lấy dữ liệu toàn hệ thống...</span><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';document.body.appendChild(noti);const[exams,tuitionData,programData]=await Promise.all([fetchBG(CONFIG.URL_LICHTHI,'EXAM'),fetchBG(CONFIG.URL_HOCPHI,'TUITION'),fetchProgram()]);document.body.removeChild(noti);const payload={mssv:gData.mssv,grades:gData.grades,exams:exams,tuition:tuitionData,program:programData};if(window.opener){window.opener.postMessage({type:'PORTAL_DATA',payload:payload},'*');alert(\`✅ ĐỒNG BỘ THÀNH CÔNG!\\n- SV: \${payload.mssv}\\n- Điểm: \${payload.grades.length} dòng\\n- CTĐT: \${payload.program.length} môn\`);}else{alert("⚠️ Không tìm thấy Web App cha.");}}catch(e){alert("❌ Lỗi: "+e.message)}})();`;
+// 2. HÀM TẠO BOOKMARKLET TỪ SOURCE CODE
+function createBookmarklet(sourceCode) {
+    if (!sourceCode) return "";
+
+    // Bước 1: Làm sạch comment
+    let code = sourceCode
+        .replace(/\/\*[\s\S]*?\*\//g, '')   // Xóa block comment
+        .replace(/\/\/.*$/gm, '');          // Xóa line comment
+
+    // Bước 2: Nén cơ bản (Xóa xuống dòng, tab, khoảng trắng thừa)
+    code = code
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    // Bước 3: Mã hóa URI
+    // Thay thế các ký tự đặc biệt để chạy được trên thanh địa chỉ
+    const encodedCode = encodeURIComponent(code)
+        .replace(/'/g, '%27')
+        .replace(/\(/g, '%28')
+        .replace(/\)/g, '%29');
+
+    // Bước 4: Tạo prefix
+    return `javascript:${encodedCode}`;
+}
+
+// 3. HÀM ĐỌC FILE VÀ TRẢ VỀ LINK (ASYNC)
+// Đây là hàm bạn cần thêm để đọc file Bookmarklet.js
+export async function getBookmarkletHref() {
+    try {
+        // Tải nội dung file js/Bookmarklet.js về dạng text
+        const response = await fetch('./js/Bookmarklet.js');
+        
+        if (!response.ok) {
+            throw new Error("Không thể tải file Bookmarklet.js");
+        }
+
+        const fullCode = await response.text();
+        
+        // Chuyển đổi thành dạng link bookmarklet
+        return createBookmarklet(fullCode);
+
+    } catch (error) {
+        console.error("Lỗi tạo bookmarklet:", error);
+        return "javascript:alert('Lỗi tải Bookmarklet! Vui lòng kiểm tra console.');";
+    }
+}

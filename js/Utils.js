@@ -5,44 +5,101 @@ import { renderCourseList } from './render/Dashboard.js';
 let GLOBAL_COURSE_DB = [];
 
 // --- HÀM KHỞI TẠO ---
-export function initApp() {
-    window.addEventListener('load', async () => {
-        // Tải dữ liệu cũ
-        const oldData = localStorage.getItem('student_db_full');
-        if(oldData && window.renderUI) {
-            try { window.renderUI(JSON.parse(oldData)); } catch(e){}
-        }
-
-        // Tải danh sách môn học
-        console.log("Đang tải course_db.json...");
-        const data = await loadCourseData();
-        if (data) {
-            GLOBAL_COURSE_DB = data;
-            renderCourseList(GLOBAL_COURSE_DB);
-        }
-    });
+export async function initApp() {
+    // 1. Load dữ liệu có sẵn (Offline hoặc JSON) vào biến toàn cục ngay lập tức
+    const data = await loadCourseData();
+    GLOBAL_COURSE_DB = data;
+    console.log(`✅ Đã nạp ${GLOBAL_COURSE_DB.length} môn vào bộ nhớ ứng dụng.`);
     
-    // Gán các hàm cần thiết vào window để HTML gọi được (onclick)
+    // Nếu có hàm render danh sách môn bên Main.js hoặc UI thì gọi cập nhật (nếu cần)
+    if(window.renderCourseList) window.renderCourseList(GLOBAL_COURSE_DB);
+
+    window.addEventListener("message", (event) => {
+        // Kiểm tra nguồn gốc dữ liệu cho an toàn
+        if (payload.rawOpenCourses && payload.rawOpenCourses.length > 0) {
+            const payload = event.data.payload;
+            
+            console.log("📥 Đã nhận dữ liệu từ Portal:", payload);
+            
+            // GLOBAL_COURSE_DB = processedDB;
+            
+            // 1. LƯU DASHBOARD (Điểm, Lịch thi...)
+            localStorage.setItem('student_db_full', JSON.stringify(payload));
+            if(window.renderDashboardUI) window.renderDashboardUI(payload);
+
+            // 2. XỬ LÝ & LƯU DANH SÁCH LỚP (QUAN TRỌNG)
+            // Kiểm tra xem payload có rawOpenCourses không (do Bookmarklet gửi về)
+            if (payload.rawOpenCourses && payload.rawOpenCourses.length > 0) {
+                console.log(`⚙️ Đang xử lý ${payload.rawOpenCourses.length} lớp học thô...`);
+                
+                // Gọi Utils để chuyển đổi Text -> Bitmask
+                const processedDB = processRawCourseData(payload.rawOpenCourses);
+                
+                console.log("✅ Kết quả xử lý:", processedDB);
+
+                if (processedDB.length > 0) {
+                    // LƯU VÀO LOCAL STORAGE NGAY LẬP TỨC
+                    localStorage.setItem('course_db_offline', JSON.stringify(processedDB));
+                    console.log("💾 Đã lưu course_db_offline vào LocalStorage thành công!");
+                    
+                    // Cập nhật lên màn hình ngay mà không cần F5
+                    GLOBAL_COURSE_DB = processedDB;
+                    if(window.renderCourseList) window.renderCourseList(GLOBAL_COURSE_DB);
+                    
+                    alert(`Đã cập nhật ${processedDB.length} môn học vào bộ nhớ đệm!`);
+                }
+            } else {
+                console.warn("⚠️ Payload không có danh sách lớp mở (rawOpenCourses). Kiểm tra lại Bookmarklet!");
+            }
+
+            // Báo thành công UI
+            const statusEl = document.getElementById('status-area');
+            if (statusEl) {
+                statusEl.innerText = "✅ Đồng bộ thành công!";
+                statusEl.classList.add('success');
+            }
+        }
+    }, false);
+    
+    // Gán các hàm cần thiết vào window
     window.toggleRow = toggleRow;
     window.filterCourses = filterCourses;
     window.onNutBamXepLich = onNutBamXepLich;
-    window.runScheduleSolver = runScheduleSolver; // Để debug
+    window.runScheduleSolver = runScheduleSolver; 
 }
 
 // --- CÁC HÀM UTILS & RENDER ---
 
+// [QUAN TRỌNG] Hàm này đã được sửa để ưu tiên LocalStorage
 async function loadCourseData() {
+    // 1. ƯU TIÊN KIỂM TRA LOCAL STORAGE TRƯỚC
+    const offlineData = localStorage.getItem('course_db_offline');
+    
+    if (offlineData) {
+        try {
+            const parsed = JSON.parse(offlineData);
+            // Kiểm tra sơ bộ xem dữ liệu có hợp lệ không
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                console.log("✅ Đã tải dữ liệu lớp từ LocalStorage (Offline).");
+                return parsed; // <--- Trả về luôn, không fetch nữa
+            }
+        } catch (e) {
+            console.warn("⚠️ Dữ liệu LocalStorage lỗi, sẽ tải file mẫu.");
+            localStorage.removeItem('course_db_offline'); // Xóa đi cho sạch
+        }
+    }
+
+    // 2. NẾU KHÔNG CÓ (HOẶC LỖI) MỚI ĐI TẢI FILE
+    console.log("ℹ️ Không có dữ liệu Offline, đang tải file Course_db.json...");
     try {
         const response = await fetch('./js/tkb/Course_db.json'); 
         if (!response.ok) throw new Error("Không tải được file dữ liệu môn học!");
         return await response.json();
     } catch (error) {
-        alert("Lỗi: " + error.message);
-        return null;
+        console.error("❌ Lỗi tải data:", error);
+        return []; // Trả về mảng rỗng để không crash app
     }
 }
-
-
 
 function toggleRow(subjID) {
     const row = document.getElementById(`row-${subjID}`);
@@ -143,73 +200,6 @@ function decodeScheduleMask(parts) {
     return slots;
 }
 
-function renderScheduleResults(results) {
-    const container = document.getElementById('schedule-results-area');
-    container.innerHTML = ''; 
-    container.style.display = 'block';
-
-    if (!results || results.length === 0) {
-        container.innerHTML = '<div style="text-align:center; padding:20px; color:red">Không tìm thấy lịch học phù hợp!</div>';
-        return;
-    }
-
-    const days = ["Hai", "Ba", "Tư", "Năm", "Sáu", "Bảy", "CN"];
-
-    results.forEach((opt, index) => {
-        let grid = Array(10).fill(null).map(() => Array(7).fill(null));
-
-        opt.schedule.forEach(subject => {
-            const timeSlots = decodeScheduleMask(subject.mask);
-            timeSlots.forEach(slot => {
-                if (slot.period < 10) {
-                    const cellContent = `
-                        <div style="font-size:11px; font-weight:bold; color:#005a8d">${subject.subjectID}</div>
-                        <div style="font-size:10px; opacity:0.8">${subject.classID}</div>
-                    `;
-                    // Nối nội dung nếu trùng lịch
-                    if(grid[slot.period][slot.day]) grid[slot.period][slot.day] += "<hr style='margin:2px 0'>" + cellContent;
-                    else grid[slot.period][slot.day] = cellContent;
-                }
-            });
-        });
-
-        let tableHTML = `
-            <div class="schedule-option">
-                <div class="schedule-header">
-                    <span>OPTION ${opt.option}</span>
-                    <span>Điểm: ${opt.fitness.toFixed(0)}</span>
-                </div>
-                <table class="tkb-grid">
-                    <thead>
-                        <tr>
-                            <th class="period-col">Tiết</th>
-                            ${days.map(d => `<th>${d}</th>`).join('')}
-                        </tr>
-                    </thead>
-                    <tbody>
-        `;
-
-        for (let p = 0; p < 10; p++) {
-            tableHTML += `<tr>`;
-            tableHTML += `<td class="period-col">${p + 1}</td>`;
-            for (let d = 0; d < 7; d++) {
-                const content = grid[p][d];
-                if (content) {
-                    tableHTML += `<td class="tkb-cell-active" title="Môn học">${content}</td>`;
-                } else {
-                    tableHTML += `<td></td>`;
-                }
-            }
-            tableHTML += `</tr>`;
-        }
-
-        tableHTML += `</tbody></table></div>`;
-        container.insertAdjacentHTML('beforeend', tableHTML);
-    });
-    
-    container.scrollIntoView({ behavior: 'smooth' });
-}
-
 // Chuyển mảng string ["T2(1-3)"] -> Bitmask [int, int, int, int]
 export function encodeScheduleToMask(scheduleStrArray) {
     let mask = [0, 0, 0, 0]; 
@@ -228,3 +218,20 @@ export function encodeScheduleToMask(scheduleStrArray) {
     });
     return mask;
 }
+
+
+// File: js/Utils.js
+
+export function clearCacheAndReload() {
+    if (confirm("Bạn có chắc muốn xóa toàn bộ dữ liệu đã lưu và tải lại trang?")) {
+        // Xóa các key quan trọng nhất
+        localStorage.removeItem('course_db_offline');
+        localStorage.removeItem('student_db_full');
+        
+        // Reload để áp dụng thay đổi
+        window.location.reload();
+    }
+}
+
+// Gán vào window để gọi được từ button onclick trong HTML
+window.clearAppCache = clearCacheAndReload;
