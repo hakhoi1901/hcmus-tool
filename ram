@@ -1,0 +1,222 @@
+"student_db_full": {
+        "mssv": "HÀ ĐĂNG KHÔI",
+        "grades": [
+            {
+                "semester": "24-25/1",
+                "id": "ADD00031",
+                "name": "Anh văn 1",
+                "credits": "3",
+                "class": "24CTT4",
+                "score": 7.7
+            },
+            {
+                "semester": "24-25/1",
+                "id": "BAA00021",
+                "name": "Thể dục 1",
+                "credits": "5",
+                "class": "24VT_T4Ti1",
+                "score": 7
+            },
+            {
+                "semester": "24-25/1",
+                "id": "CSC00004",
+                "name": "Nhập môn Công nghệ Thông tin",
+                "credits": "4",
+                "class": "24CTT4",
+                "score": 8.8
+            },
+            {
+                "semester": "24-25/1",
+                "id": "CSC10012",
+                "name": "Cơ sở lập trình",
+                "credits": "4",
+                "class": "24CTT4",
+                "score": 8.3
+            },
+            {
+                "semester": "24-25/1",
+                "id": "MTH00021",
+                "name": "Vi tích phân 1",
+                "credits": "4",
+                "class": "24CTT4",
+                "score": 10
+            },
+            {
+                "semester": "24-25/1",
+                "id": "MTH00045",
+                "name": "Toán rời rạc",
+                "credits": "4",
+                "class": "24CTT4",
+                "score": 8.5
+            },
+            {
+                "semester": "24-25/2",
+                "id": "ADD00032",
+                "name": "Anh văn 2",
+                "credits": "3",
+                "class": "24C3_3",
+                "score": 8.5
+            },
+            {
+                "semester": "24-25/2",
+                "id": "BAA00004",
+                "name": "Pháp luật đại cương",
+                "credits": "3",
+                "class": "24CTT5",
+                "score": 8.3
+            },
+            {
+                "semester": "24-25/2",
+                "id": "BAA00022",
+                "name": "Thể dục 2",
+                "credits": "2",
+                "class": "24PB_T6Ti8",
+                "score": 8
+            },
+            {
+                "semester": "24-25/2",
+                "id": "CSC10004",
+                "name": "Cấu trúc dữ liệu và giải thuật",
+                "credits": "4",
+                "class": "24CTT5",
+                "score": 8.6
+            },
+            {
+                "semester": "24-25/2",
+                "id": "ENV00003",
+                "name": "Con người và môi trường",
+                "credits": "2",
+                "class": "24SHH2",
+                "score": 8
+            },
+            {
+                "semester": "24-25/2",
+                "id": "MTH00022",
+                "name": "Vi tích phân 2",
+                "credits": "4",
+                "class": "24CTT5",
+                "score": 6
+            },
+            {
+                "semester": "24-25/2",
+                "id": "MTH00035",
+                "name": "Đại số tuyến tính",
+                "credits": "4",
+                "class": "24CTT5",
+                "score": 7.1
+            },
+            {
+                "semester": "24-25/2",
+                "id": "PHY00001",
+                "name": "Vật l‎‎ý đại cương 1 (Cơ - Nhiệt)",
+                "credits": "3",
+                "class": "24CTT5",
+                "score": 9.2
+            },
+            {
+                "semester": "25-26/1",
+                "id": "BAA00005",
+                "name": "Kinh tế đại cương",
+                "credits": "2",
+                "class": "24_2",
+                "score": ""
+            },
+            {
+                "semester": "25-26/1",
+                "id": "BAA00030",
+                "name": "Giáo dục quốc phòng - An ninh",
+                "credits": "4",
+                "class": "1",
+                "score": 7
+            },
+            {
+                "semester": "25-26/1",
+                "id": "CSC10003",
+                "name": "Phương pháp lập trình hướng đối tượng",
+                "credits": "4",
+                "class": "24CTT5",
+                "score": ""
+            },
+            {
+                "semester": "25-26/1",
+                "id": "CSC10008",
+                "name": "Mạng máy tính",
+                "credits": "4",
+                "class": "24CTT5",
+                "score": ""
+            },
+            {
+                "semester": "25-26/1",
+                "id": "MTH00044",
+                "name": "Xác suất thống kê",
+                "credits": "4",
+                "class": "24CTT5",
+                "score": ""
+            },
+            {
+                "semester": "25-26/1",
+                "id": "MTH00050",
+                "name": "Toán học tổ hợp",
+                "credits": "4",
+                "class": "24CTT5",
+                "score": ""
+            },
+            {
+                "semester": "25-26/1",
+                "id": "PHY00002",
+                "name": "Vật l‎‎ý đại cương 2 (Điện từ - Quang)",
+                "credits": "3",
+                "class": "24KDL1",
+                "score": ""
+            }
+        ],
+        "exams": [],
+        "tuition": {
+            "total": "19,427,000",
+            "details": [
+                {
+                    "code": "BAA00030/1",
+                    "name": "Giáo dục quốc phòng - An ninh",
+                    "credits": "4.0",
+                    "fee": "1,700,000"
+                },
+                {
+                    "code": "BAA00005/24_2",
+                    "name": "Kinh tế đại cương",
+                    "credits": "2.0",
+                    "fee": "850,000"
+                },
+                {
+                    "code": "CSC10008/24CTT5",
+                    "name": "Mạng máy tính",
+                    "credits": "4.0",
+                    "fee": "4,285,000"
+                },
+                {
+                    "code": "CSC10003/24CTT5",
+                    "name": "Phương pháp lập trình hướng đối tượng",
+                    "credits": "4.0",
+                    "fee": "4,285,000"
+                },
+                {
+                    "code": "MTH00050/24CTT5",
+                    "name": "Toán học tổ hợp",
+                    "credits": "4.0",
+                    "fee": "3,195,000"
+                },
+                {
+                    "code": "PHY00002/24KDL1",
+                    "name": "Vật l‎‎ý đại cương 2 (Điện từ - Quang)",
+                    "credits": "3.0",
+                    "fee": "1,917,000"
+                },
+                {
+                    "code": "MTH00044/24CTT5",
+                    "name": "Xác suất thống kê",
+                    "credits": "4.0",
+                    "fee": "3,195,000"
+                }
+            ]
+        },
+        "program": []
+    },
